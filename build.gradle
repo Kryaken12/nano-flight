@@ -8,7 +8,6 @@ base { archivesName = project.archives_base_name }
 
 repositories {
     maven { url = "https://maven.ladysnake.org/releases" }   // Player Ability Lib
-    maven { url = "https://maven.modmuss50.me/" }            // Tech Reborn / Reborn Core
     maven { url = "https://maven.fabricmc.net/" }
 }
 
@@ -18,14 +17,9 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-    // Player Ability Lib: bundled inside our jar (jar-in-jar)
+    // Player Ability Lib: встроена в наш jar
     modImplementation "io.github.ladysnake:PlayerAbilityLib:${project.pal_version}"
     include "io.github.ladysnake:PlayerAbilityLib:${project.pal_version}"
-
-    // Tech Reborn + Reborn Core (compile only, the player installs them)
-    // ЕСЛИ maven не находит эти координаты - см. запасной вариант в README.txt
-    modCompileOnly "TechReborn:TechReborn-1.20:${project.techreborn_version}"
-    modCompileOnly "RebornCore:RebornCore-1.20:${project.techreborn_version}"
 }
 
 processResources {
