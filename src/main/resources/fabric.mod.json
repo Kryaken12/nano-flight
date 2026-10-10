@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "nano_flight",
+  "version": "${version}",
+  "name": "Nano Armor Flight",
+  "description": "Lets Tech Reborn Nano Suit chestplate fly (via Player Ability Lib). Flight cost is the same as the Quantum Suit.",
+  "authors": ["you"],
+  "license": "CC0-1.0",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["mod.nanoflight.NanoFlight"]
+  },
+  "depends": {
+    "fabricloader": ">=0.15.6",
+    "minecraft": "1.20.1",
+    "java": ">=17",
+    "fabric-api": "*",
+    "techreborn": ">=5.8.9",
+    "playerabilitylib": "1.8.x"
+  }
+}
