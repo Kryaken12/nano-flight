@@ -4,33 +4,35 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.player.PlayerAbilities;
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
-import net.minecraft.util.math.Vec3d;
 
 /**
- * Клиентская часть: во время полета в нано-нагруднике игрок медленно опускается,
- * пока не нажаты пробел или Shift. Горизонтальное движение не затрагивается.
+ * Клиентская часть: нано-нагрудник работает как джетпак.
+ * Пробел зажат и игрок в воздухе - летит вверх. Отпустил - падает.
+ * Сервер по-прежнему выдает способность летать и списывает энергию, пока игрок "летит".
  */
 public class NanoFlightClient implements ClientModInitializer {
 
-    // Скорость снижения (блоков за тик). 0.02 = медленно. Больше число - быстрее вниз.
-    private static final double SINK = 0.09;
-
     @Override
     public void onInitializeClient() {
-        ClientTickEvents.START_CLIENT_TICK.register(client -> {
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
             ClientPlayerEntity player = client.player;
-            if (player == null || client.isPaused()) return;
+            if (player == null) return;
             if (player.isCreative() || player.isSpectator()) return;
-            if (!player.getAbilities().flying || player.isOnGround()) return;
-            if (player.input.jumping || player.input.sneaking) return;
+
+            PlayerAbilities abilities = player.getAbilities();
+            if (!abilities.allowFlying) return;
             if (!isNanoChestplate(player.getEquippedStack(EquipmentSlot.CHEST))) return;
 
-            Vec3d v = player.getVelocity();
-            player.setVelocity(v.x, v.y - SINK, v.z);
+            boolean thrust = player.input.jumping && !player.isOnGround();
+            if (abilities.flying != thrust) {
+                abilities.flying = thrust;
+                player.sendAbilitiesUpdate();
+            }
         });
     }
 
