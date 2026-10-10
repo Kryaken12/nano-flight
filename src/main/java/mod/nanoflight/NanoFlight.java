@@ -6,22 +6,47 @@ import io.github.ladysnake.pal.VanillaAbilities;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.item.ArmorItem;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
-import reborncore.common.powerSystem.RcEnergyItem;
-import techreborn.config.TechRebornConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
+/**
+ * Полет в нано-нагруднике (любой нагрудник с "nano" в id и энергией Reborn).
+ * Стоимость полета = TechRebornConfig.quantumSuitFlyingCost (как у квантовой брони).
+ * Tech Reborn используется через reflection, поэтому при сборке он не нужен.
+ */
 public class NanoFlight implements ModInitializer {
-
-    private static final Identifier NANO_CHESTPLATE = new Identifier("techreborn", "nano_chestplate");
+    private static final Logger LOG = LoggerFactory.getLogger("nano_flight");
 
     private static final AbilitySource SOURCE =
             Pal.getAbilitySource(new Identifier("nano_flight", "nano_armor"), -1000);
 
+    private static Class<?> energyClass;
+    private static Method getStored;
+    private static Method tryUse;
+    private static Field costField;
+
     @Override
     public void onInitialize() {
+        try {
+            energyClass = Class.forName("reborncore.common.powerSystem.RcEnergyItem");
+            getStored = energyClass.getMethod("getStoredEnergy", ItemStack.class);
+            tryUse = energyClass.getMethod("tryUseEnergy", ItemStack.class, long.class);
+            costField = Class.forName("techreborn.config.TechRebornConfig")
+                    .getField("quantumSuitFlyingCost");
+        } catch (Throwable t) {
+            LOG.error("Tech Reborn API not found, nano flight disabled", t);
+            return;
+        }
+
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
                 tickPlayer(player);
@@ -30,27 +55,32 @@ public class NanoFlight implements ModInitializer {
     }
 
     private static boolean isNanoChestplate(ItemStack stack) {
-        return !stack.isEmpty()
-                && Registries.ITEM.getId(stack.getItem()).equals(NANO_CHESTPLATE)
-                && stack.getItem() instanceof RcEnergyItem;
+        if (stack.isEmpty()) return false;
+        Item item = stack.getItem();
+        if (!(item instanceof ArmorItem armor) || armor.getSlotType() != EquipmentSlot.CHEST) return false;
+        if (!energyClass.isInstance(item)) return false;
+        return Registries.ITEM.getId(item).getPath().contains("nano");
     }
 
     private static void tickPlayer(ServerPlayerEntity player) {
-        if (player.isSpectator()) {
-            return;
-        }
+        if (player.isSpectator()) return;
 
         ItemStack stack = player.getEquippedStack(EquipmentSlot.CHEST);
-        long cost = TechRebornConfig.quantumSuitFlyingCost;
-
         boolean canFly = false;
-        if (isNanoChestplate(stack)) {
-            RcEnergyItem item = (RcEnergyItem) stack.getItem();
-            canFly = item.getStoredEnergy(stack) >= cost;
 
-            if (canFly && player.getAbilities().flying && !player.isCreative()) {
-                canFly = item.tryUseEnergy(stack, cost);
+        try {
+            if (isNanoChestplate(stack)) {
+                long cost = costField.getLong(null);
+                Object item = stack.getItem();
+                long stored = (long) getStored.invoke(item, stack);
+                canFly = stored >= cost;
+
+                if (canFly && player.getAbilities().flying && !player.isCreative()) {
+                    canFly = (boolean) tryUse.invoke(item, stack, cost);
+                }
             }
+        } catch (Throwable t) {
+            canFly = false;
         }
 
         boolean granted = SOURCE.grants(player, VanillaAbilities.ALLOW_FLYING);
