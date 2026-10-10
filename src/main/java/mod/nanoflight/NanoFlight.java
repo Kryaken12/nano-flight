@@ -19,12 +19,14 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 /**
- * Полет в нано-нагруднике (любой нагрудник с "nano" в id и энергией Reborn).
- * Стоимость полета = TechRebornConfig.quantumSuitFlyingCost (как у квантовой брони).
- * Tech Reborn используется через reflection, поэтому при сборке он не нужен.
+ * Полет в нано-нагруднике.
+ * Стоимость = TechRebornConfig.quantumSuitFlyingCost * 3 (за тик полета).
  */
 public class NanoFlight implements ModInitializer {
     private static final Logger LOG = LoggerFactory.getLogger("nano_flight");
+
+    // Во сколько раз полет нано дороже, чем у квантовой брони
+    private static final long COST_MULTIPLIER = 3;
 
     private static final AbilitySource SOURCE =
             Pal.getAbilitySource(new Identifier("nano_flight", "nano_armor"), -1000);
@@ -70,7 +72,7 @@ public class NanoFlight implements ModInitializer {
 
         try {
             if (isNanoChestplate(stack)) {
-                long cost = costField.getLong(null);
+                long cost = costField.getLong(null) * COST_MULTIPLIER;
                 Object item = stack.getItem();
                 long stored = (long) getStored.invoke(item, stack);
                 canFly = stored >= cost;
