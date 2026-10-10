@@ -3,12 +3,13 @@
   "id": "nano_flight",
   "version": "${version}",
   "name": "Nano Armor Flight",
-  "description": "Lets Tech Reborn Nano Suit chestplate fly (via Player Ability Lib). Flight cost is the same as the Quantum Suit.",
+  "description": "Lets Tech Reborn Nano Suit chestplate fly (via Player Ability Lib). Flight cost is 3x the Quantum Suit.",
   "authors": ["you"],
   "license": "CC0-1.0",
   "environment": "*",
   "entrypoints": {
-    "main": ["mod.nanoflight.NanoFlight"]
+    "main": ["mod.nanoflight.NanoFlight"],
+    "client": ["mod.nanoflight.NanoFlightClient"]
   },
   "depends": {
     "fabricloader": ">=0.15.6",
