@@ -17,7 +17,7 @@ import net.minecraft.util.math.Vec3d;
 public class NanoFlightClient implements ClientModInitializer {
 
     // Скорость снижения (блоков за тик). 0.02 = медленно. Больше число - быстрее вниз.
-    private static final double SINK = 0.02;
+    private static final double SINK = 0.09;
 
     @Override
     public void onInitializeClient() {
